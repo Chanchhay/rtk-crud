@@ -9,6 +9,7 @@ import {
     useUpdateProductMutation,
 } from "@/services/ecommerce";
 import { UpdateProductType } from "@/lib/products";
+import { showMutationConfirmation } from "@/lib/mutation-toast";
 
 const updateProductData: UpdateProductType = {
     name: "Dell XPS 15 9530 Updated",
@@ -35,7 +36,7 @@ const updateProductData: UpdateProductType = {
         },
     ],
     thumbnail:
-        "https://i.dell.com/is/image/DellContent/content/dam/ss2/product-images/dell-client-products/notebooks/xps-notebooks/xps-15-9530/media-gallery/touch-black/notebook-xps-15-9530-t-black-gallery-1.psd?fmt=png-alpha&pscan=auto&scl=1&hei=320&wid=520&qlt=100,1&resMode=sharp2&size=520,320&chrss=full",
+        "https://i.dell.com/is/image/DellContent/content/dam/ss2/product-images/dell-client-products/",
     warranty: "2 years international warranty",
     availability: true,
     images: [
@@ -69,23 +70,32 @@ export default function DataTablePage() {
         setSelectedUuid(null);
     };
 
-    const handleUpdateProduct = async (uuid: string) => {
-        try {
-            await updateProduct({
-                uuid,
-                product: updateProductData,
-            }).unwrap();
-        } catch (error) {
-            console.error("Failed to update product", error);
-        }
+    const handleUpdateProduct = (uuid: string) => {
+        showMutationConfirmation({
+            title: "Update product?",
+            description: "This will replace the selected product with the sample update data.",
+            confirmLabel: "Update",
+            loading: "Updating product...",
+            success: "Product updated.",
+            error: "Failed to update product.",
+            onConfirm: () =>
+                updateProduct({
+                    uuid,
+                    product: updateProductData,
+                }).unwrap(),
+        });
     };
 
-    const handleDeleteProduct = async (uuid: string) => {
-        try {
-            await deleteProduct(uuid).unwrap();
-        } catch (error) {
-            console.error("Failed to delete product", error);
-        }
+    const handleDeleteProduct = (uuid: string) => {
+        showMutationConfirmation({
+            title: "Delete product?",
+            description: "This product will be removed from the product list.",
+            confirmLabel: "Delete",
+            loading: "Deleting product...",
+            success: "Product deleted.",
+            error: "Failed to delete product.",
+            onConfirm: () => deleteProduct(uuid).unwrap(),
+        });
     };
 
     return (

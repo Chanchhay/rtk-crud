@@ -34,6 +34,7 @@ import {
 import { DataTableFacetedFilter } from "../ui/command-range";
 import { useCreateProductMutation } from "@/services/ecommerce";
 import { CreateProductType } from "@/lib/products";
+import { showMutationConfirmation } from "@/lib/mutation-toast";
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
@@ -41,50 +42,34 @@ interface DataTableProps<TData, TValue> {
 }
 
 const newProduct: CreateProductType = {
-    name: "Dell XPS 15 9530jbsdfonwflkwnrfouwoafawh",
-    description:
-        "Premium ultrabook with a stunning InfinityEdge display, ideal for creative professionals and power users on the go.",
+    name: "stringadgb",
+    description: "stringkrnbgowi",
     computerSpec: {
-        processor: "Intel Core i7-13700H",
-        ram: "32GB DDR5",
-        storage: "1TB NVMe SSD",
-        gpu: "NVIDIA GeForce RTX 4050 6GB",
-        os: "Windows 11 Pro",
-        screenSize: "15.6-inch 3.5K OLED Touch",
-        battery: "86Wh, up to 13 hours",
+        processor: "string",
+        ram: "string",
+        storage: "string",
+        gpu: "string",
+        os: "string",
+        screenSize: "string",
+        battery: "string",
     },
-    stockQuantity: 24,
-    priceIn: 1450,
-    priceOut: 1899,
-    discount: 5,
+    stockQuantity: 0,
+    priceIn: 1,
+    priceOut: 1,
+    discount: 0,
     color: [
         {
-            color: "Platinum Silver",
-            images: [
-                "https://example.com/images/dell-xps-15/silver-1.jpg",
-                "https://example.com/images/dell-xps-15/silver-2.jpg",
-            ],
-        },
-        {
-            color: "Graphite Black",
-            images: [
-                "https://example.com/images/dell-xps-15/black-1.jpg",
-                "https://example.com/images/dell-xps-15/black-2.jpg",
-            ],
+            color: "string",
+            images: ["string"],
         },
     ],
-    thumbnail:
-        "https://i.dell.com/is/image/DellContent/content/dam/ss2/product-images/dell-client-products/notebooks/xps-notebooks/xps-15-9530/media-gallery/touch-black/notebook-xps-15-9530-t-black-gallery-1.psd?fmt=png-alpha&pscan=auto&scl=1&hei=320&wid=520&qlt=100,1&resMode=sharp2&size=520,320&chrss=full",
-    warranty: "2 years international warranty",
+    thumbnail: "string",
+    warranty: "string",
     availability: true,
-    images: [
-        "https://example.com/images/dell-xps-15/main-1.jpg",
-        "https://example.com/images/dell-xps-15/main-2.jpg",
-        "https://example.com/images/dell-xps-15/main-3.jpg",
-    ],
-    categoryUuid: "462d9f60-8346-45ab-b8b3-a597d240965b",
-    supplierUuid: "a34496d2-370e-4332-8c6d-b4a6bc069bf1",
-    brandUuid: "8f2e3bcb-bb0b-45a1-b9bc-1d43f08f0ddb",
+    images: ["string"],
+    categoryUuid: "6abd6b9a-8b9a-4613-bc2d-42686156a313",
+    supplierUuid: "7dd85516-733b-4d47-a445-583c225fb833",
+    brandUuid: "c273f461-4492-4f00-9d69-8e12d0dd9d8b",
 };
 
 export function DataTable<TData, TValue>({
@@ -144,12 +129,16 @@ export function DataTable<TData, TValue>({
             }));
     };
 
-    const handleCreateProduct = async () => {
-        try {
-            await createProduct(newProduct).unwrap();
-        } catch (error) {
-            console.error("Failed to create product", error);
-        }
+    const handleCreateProduct = () => {
+        showMutationConfirmation({
+            title: "Create product?",
+            description: "This will add the sample product to the product list.",
+            confirmLabel: "Create",
+            loading: "Creating product...",
+            success: "Product created.",
+            error: "Failed to create product.",
+            onConfirm: () => createProduct(newProduct).unwrap(),
+        });
     };
 
     return (

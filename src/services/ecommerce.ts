@@ -1,4 +1,5 @@
 import {
+    BasedMessage,
     CreateProductType,
     ProductResponse,
     ProductType,
@@ -28,7 +29,7 @@ export const ecommerceApi = createApi({
             }),
         }),
         // create Product
-        createProduct: builder.mutation<ProductType, CreateProductType>({
+        createProduct: builder.mutation<BasedMessage, CreateProductType>({
             query: (newProduct: CreateProductType) => ({
                 url: `${window.location.origin}/api/products`,
                 method: "POST",
@@ -55,7 +56,7 @@ export const ecommerceApi = createApi({
             invalidatesTags: ["Products"],
         }),
         // delete Product
-        deleteProduct: builder.mutation<{ message?: string } | null, string>({
+        deleteProduct: builder.mutation<BasedMessage | null, string>({
             query: (uuid: string) => ({
                 url: `${window.location.origin}/api/products/${uuid}`,
                 method: "DELETE",

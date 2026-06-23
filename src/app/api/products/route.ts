@@ -10,9 +10,12 @@ const getProductsUrl = () => {
     return `${baseUrl.replace(/\/$/, "")}/products`;
 };
 
+const getAccessToken = () =>
+    process.env.ACCESS_TOKEN;
+
 export async function POST(request: Request) {
     const productsUrl = getProductsUrl();
-    const accessToken = process.env.ACCESS_TOKEN;
+    const accessToken = getAccessToken();
 
     if (!productsUrl || !accessToken) {
         return NextResponse.json(

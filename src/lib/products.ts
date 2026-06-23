@@ -10,6 +10,10 @@ export interface ProductResponse {
     content: ProductType[];
 }
 
+export type BasedMessage = {
+    message?: string;
+};
+
 export type CreateProductType = {
     name: string;
     description: string;

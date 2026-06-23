@@ -10,13 +10,16 @@ const getProductUrl = (uuid: string) => {
     return `${baseUrl.replace(/\/$/, "")}/products/${uuid}`;
 };
 
+const getAccessToken = () =>
+    process.env.ACCESS_TOKEN
+
 export async function PUT(
     request: Request,
     context: { params: Promise<{ uuid: string }> },
 ) {
     const { uuid } = await context.params;
     const productUrl = getProductUrl(uuid);
-    const accessToken = process.env.ACCESS_TOKEN ?? process.env.ACCESS_TOEKN;
+    const accessToken = getAccessToken();
 
     if (!productUrl || !accessToken) {
         return NextResponse.json(
@@ -56,7 +59,7 @@ export async function DELETE(
 ) {
     const { uuid } = await context.params;
     const productUrl = getProductUrl(uuid);
-    const accessToken = process.env.ACCESS_TOKEN ?? process.env.ACCESS_TOEKN;
+    const accessToken = getAccessToken();
 
     if (!productUrl || !accessToken) {
         return NextResponse.json(
