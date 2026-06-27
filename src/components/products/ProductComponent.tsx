@@ -1,6 +1,7 @@
 "use client";
 
 import { Controller, useForm } from "react-hook-form";
+import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,7 +12,11 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CreateProductType } from "@/lib/products";
-import { useCreateProductMutation } from "@/services/ecommerce";
+import { ProductFileUpload } from "@/components/products/ProductFileUpload";
+import {
+    useCreateProductMutation,
+    useUploadMultipleFilesMutation,
+} from "@/services/ecommerce";
 
 const formSchema = z.object({
     name: z.string().min(1, "Product name is required."),
@@ -20,12 +25,9 @@ const formSchema = z.object({
     priceIn: z.number().positive("Cost price must be greater than 0."),
     priceOut: z.number().positive("Sale price must be greater than 0."),
     discount: z.number().min(0, "Discount cannot be negative."),
-    thumbnail: z.string().optional(),
     warranty: z.string().optional(),
     availability: z.boolean(),
-    images: z.string().optional(),
     colorName: z.string().optional(),
-    colorImages: z.string().optional(),
     categoryUuid: z.string().min(1, "Category UUID is required."),
     supplierUuid: z.string().min(1, "Supplier UUID is required."),
     brandUuid: z.string().min(1, "Brand UUID is required."),
@@ -47,12 +49,9 @@ const defaultValues: ProductFormValues = {
     priceIn: 1,
     priceOut: 1,
     discount: 0,
-    thumbnail: "",
     warranty: "",
     availability: true,
-    images: "",
     colorName: "",
-    colorImages: "",
     categoryUuid: "",
     supplierUuid: "",
     brandUuid: "",
@@ -64,12 +63,6 @@ const defaultValues: ProductFormValues = {
     screenSize: "",
     battery: "",
 };
-
-const splitCsv = (value?: string) =>
-    value
-        ?.split(",")
-        .map((item) => item.trim())
-        .filter(Boolean) ?? [];
 
 const getMutationErrorMessage = (error: unknown) => {
     if (
@@ -90,6 +83,9 @@ const getMutationErrorMessage = (error: unknown) => {
 export default function CreateProduct() {
     const [createProduct, { isLoading: isCreating }] =
         useCreateProductMutation();
+    const [uploadMultipleFiles, { isLoading: isUploading }] =
+        useUploadMultipleFilesMutation();
+    const [imageFiles, setImageFiles] = useState<File[]>([]);
 
     const {
         control,
@@ -102,45 +98,80 @@ export default function CreateProduct() {
         defaultValues,
     });
 
-    const onSubmit = async (values: ProductFormValues) => {
-        const product: CreateProductType = {
-            name: values.name,
-            description: values.description ?? "",
-            stockQuantity: values.stockQuantity,
-            priceIn: values.priceIn,
-            priceOut: values.priceOut,
-            discount: values.discount,
-            thumbnail: values.thumbnail ?? "",
-            warranty: values.warranty ?? "",
-            availability: values.availability,
-            images: splitCsv(values.images),
-            color: values.colorName
-                ? [
-                      {
-                          color: values.colorName,
-                          images: splitCsv(values.colorImages),
-                      },
-                  ]
-                : [],
-            computerSpec: {
-                processor: values.processor ?? "",
-                ram: values.ram ?? "",
-                storage: values.storage ?? "",
-                gpu: values.gpu ?? "",
-                os: values.os ?? "",
-                screenSize: values.screenSize ?? "",
-                battery: values.battery ?? "",
-            },
-            categoryUuid: values.categoryUuid,
-            supplierUuid: values.supplierUuid,
-            brandUuid: values.brandUuid,
-        };
+    const resetForm = () => {
+        reset(defaultValues);
+        setImageFiles([]);
+    };
 
+    const uploadFiles = async (files: File[]) => {
+        if (!files.length) {
+            return [];
+        }
+
+        const formData = files.reduce((data, file) => {
+            data.append("files", file);
+            return data;
+        }, new FormData());
+
+        const uploadedFiles = await uploadMultipleFiles(formData).unwrap();
+
+        return uploadedFiles
+            .map((file) => file.uri)
+            .filter((uri): uri is string => Boolean(uri));
+    };
+
+    const onSubmit = async (values: ProductFormValues) => {
         try {
+            if (!imageFiles.length) {
+                toast.error("Please choose at least one image file.");
+                return;
+            }
+
+            const imageUris = await uploadFiles(imageFiles);
+            const imageUri = imageUris[0];
+
+            if (!imageUri) {
+                toast.error("Image upload did not return a file URL.");
+                return;
+            }
+
+            const product: CreateProductType = {
+                name: values.name,
+                description: values.description ?? "",
+                stockQuantity: values.stockQuantity,
+                priceIn: values.priceIn,
+                priceOut: values.priceOut,
+                discount: values.discount,
+                thumbnail: imageUri,
+                warranty: values.warranty ?? "",
+                availability: values.availability,
+                images: imageUris,
+                color: values.colorName
+                    ? [
+                          {
+                              color: values.colorName,
+                              images: imageUris,
+                          },
+                      ]
+                    : [],
+                computerSpec: {
+                    processor: values.processor ?? "",
+                    ram: values.ram ?? "",
+                    storage: values.storage ?? "",
+                    gpu: values.gpu ?? "",
+                    os: values.os ?? "",
+                    screenSize: values.screenSize ?? "",
+                    battery: values.battery ?? "",
+                },
+                categoryUuid: values.categoryUuid,
+                supplierUuid: values.supplierUuid,
+                brandUuid: values.brandUuid,
+            };
+
             const response = await createProduct(product).unwrap();
 
             toast.success(response.message ?? "Product created.");
-            reset(defaultValues);
+            resetForm();
         } catch (error) {
             toast.error(getMutationErrorMessage(error));
         }
@@ -167,14 +198,13 @@ export default function CreateProduct() {
                         <FieldError errors={[errors.name]} />
                     </Field>
 
-                    <Field data-invalid={!!errors.thumbnail}>
-                        <FieldLabel htmlFor="thumbnail">Thumbnail URL</FieldLabel>
-                        <Input
-                            id="thumbnail"
-                            aria-invalid={!!errors.thumbnail}
-                            {...register("thumbnail")}
+                    <Field className="md:col-span-2">
+                        <FieldLabel>Images</FieldLabel>
+                        <ProductFileUpload
+                            value={imageFiles}
+                            onValueChange={setImageFiles}
+                            disabled={isCreating || isUploading}
                         />
-                        <FieldError errors={[errors.thumbnail]} />
                     </Field>
 
                     <Field
@@ -289,17 +319,6 @@ export default function CreateProduct() {
                 <h2 className="text-base font-semibold">Media and Specs</h2>
 
                 <div className="grid gap-4 md:grid-cols-2">
-                    <Field data-invalid={!!errors.images}>
-                        <FieldLabel htmlFor="images">Image URLs</FieldLabel>
-                        <Input
-                            id="images"
-                            aria-invalid={!!errors.images}
-                            placeholder="https://example.com/1.png, https://example.com/2.png"
-                            {...register("images")}
-                        />
-                        <FieldError errors={[errors.images]} />
-                    </Field>
-
                     <Field data-invalid={!!errors.colorName}>
                         <FieldLabel htmlFor="colorName">Color</FieldLabel>
                         <Input
@@ -308,22 +327,6 @@ export default function CreateProduct() {
                             {...register("colorName")}
                         />
                         <FieldError errors={[errors.colorName]} />
-                    </Field>
-
-                    <Field
-                        className="md:col-span-2"
-                        data-invalid={!!errors.colorImages}
-                    >
-                        <FieldLabel htmlFor="colorImages">
-                            Color Image URLs
-                        </FieldLabel>
-                        <Input
-                            id="colorImages"
-                            aria-invalid={!!errors.colorImages}
-                            placeholder="https://example.com/red-1.png, https://example.com/red-2.png"
-                            {...register("colorImages")}
-                        />
-                        <FieldError errors={[errors.colorImages]} />
                     </Field>
 
                     <Field data-invalid={!!errors.processor}>
@@ -367,7 +370,7 @@ export default function CreateProduct() {
                     </Field>
 
                     <Field data-invalid={!!errors.os}>
-                        <FieldLabel htmlFor="os">OS</FieldLabel>The implementation is done and verified. I’m starting the Next dev server so you can open the create product page directly and test the form.
+                        <FieldLabel htmlFor="os">OS</FieldLabel>
                         <Input
                             id="os"
                             aria-invalid={!!errors.os}
@@ -434,13 +437,17 @@ export default function CreateProduct() {
                 <Button
                     type="button"
                     variant="outline"
-                    disabled={isCreating}
-                    onClick={() => reset(defaultValues)}
+                    disabled={isCreating || isUploading}
+                    onClick={resetForm}
                 >
                     Reset
                 </Button>
-                <Button type="submit" disabled={isCreating}>
-                    {isCreating ? "Creating..." : "Create product"}
+                <Button type="submit" disabled={isCreating || isUploading}>
+                    {isUploading
+                        ? "Uploading..."
+                        : isCreating
+                          ? "Creating..."
+                          : "Create product"}
                 </Button>
             </div>
         </form>

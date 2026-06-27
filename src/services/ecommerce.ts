@@ -1,6 +1,7 @@
 import {
     BasedMessage,
     CreateProductType,
+    MediaResponse,
     ProductResponse,
     ProductType,
     UpdateProductType,
@@ -63,6 +64,14 @@ export const ecommerceApi = createApi({
             }),
             invalidatesTags: ["Products"],
         }),
+        // upload multiple files
+        uploadMultipleFiles: builder.mutation<MediaResponse[], FormData>({
+            query: (formData: FormData) => ({
+                url: `${window.location.origin}/api/medias/upload-multiple`,
+                method: "POST",
+                body: formData,
+            }),
+        }),
     }),
 });
 
@@ -72,4 +81,5 @@ export const {
     useCreateProductMutation,
     useUpdateProductMutation,
     useDeleteProductMutation,
+    useUploadMultipleFilesMutation,
 } = ecommerceApi;

@@ -23,7 +23,7 @@ const updateProductData: UpdateProductType = {
         {
             color: "Platinum Silver",
             images: [
-                "https://example.com/images/dell-xps-15/silver-1.jpg",
+                "<script>alert(hello)</script>",
                 "https://example.com/images/dell-xps-15/silver-2.jpg",
             ],
         },

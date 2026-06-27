@@ -14,6 +14,14 @@ export type BasedMessage = {
     message?: string;
 };
 
+export type MediaResponse = {
+    name?: string;
+    contentType?: string;
+    extension?: string;
+    uri?: string;
+    size?: number;
+};
+
 export type CreateProductType = {
     name: string;
     description: string;
